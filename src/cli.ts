@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { resolveStateDir, getStatePaths } from "./xdg.ts";
 import { executeDispatch, type RoleName } from "./dispatch.ts";
@@ -15,7 +15,7 @@ export interface ParsedArgs {
   utterance: string;
 }
 
-export type IntentKind = "status" | "todo_ensure" | "memory_capture" | "fast_question" | "delegate";
+export type IntentKind = "status" | "attach" | "todo_ensure" | "memory_capture" | "fast_question" | "delegate";
 
 export interface ClassifiedIntent {
   kind: IntentKind;
@@ -108,9 +108,12 @@ export function foldCliArgs(argv: string[]): ParsedArgs {
 export function classifyUtterance(utterance: string): ClassifiedIntent {
   const text = utterance.trim();
 
-  // 1. Status / focus
+  // 1. Status / focus / attach
   if (!text || text === "status" || text === "focus") {
     return { kind: "status" };
+  }
+  if (text === "attach" || text === "tui" || text === "console") {
+    return { kind: "attach" };
   }
 
   // 2. Todo ensure patterns:
@@ -424,6 +427,16 @@ export async function executeCli(
 
   if (intent.kind === "status") {
     output = handleStatus(resolveStateDir(env));
+  } else if (intent.kind === "attach") {
+    if (parsed.dryRun) {
+      output = "[dry-run] Would execute: tmux attach-session -t pi-moe";
+      data = { command: ["tmux", "attach-session", "-t", "pi-moe"] };
+    } else {
+      const daemonBin = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../bin/moe-daemon");
+      const res = spawnSync(daemonBin, [], { stdio: "inherit", env: env as NodeJS.ProcessEnv });
+      output = `Exited pi-moe session (code ${res.status ?? 0})`;
+      data = { exitCode: res.status };
+    }
   } else if (intent.kind === "todo_ensure") {
     const res = handleTodoEnsure(
       intent.repo || parsed.project || "pi-moe",

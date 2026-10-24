@@ -44,6 +44,12 @@ describe("Quote-Free DWIM moe CLI (src/cli.ts)", () => {
       assert.equal(classifyUtterance("focus").kind, "status");
     });
 
+    it("classifies attach / tui / console as attach intent", () => {
+      assert.equal(classifyUtterance("attach").kind, "attach");
+      assert.equal(classifyUtterance("tui").kind, "attach");
+      assert.equal(classifyUtterance("console").kind, "attach");
+    });
+
     it("classifies todo ensure patterns", () => {
       const c1 = classifyUtterance("can you ensure we have a task down for project ob-cli to support tags");
       assert.equal(c1.kind, "todo_ensure");
@@ -101,6 +107,12 @@ describe("Quote-Free DWIM moe CLI (src/cli.ts)", () => {
   });
 
   describe("executeCli end-to-end dry-run", () => {
+    it("handles dry-run for attach", async () => {
+      const out = await executeCli(["--dry-run", "attach"]);
+      assert.equal(out.intent.kind, "attach");
+      assert.match(out.output, /tmux attach-session -t pi-moe/);
+    });
+
     it("handles dry-run for fast_question", async () => {
       const out = await executeCli(["--dry-run", "I", "have", "a", "question", "about", "systemd", "scopes"]);
       assert.equal(out.intent.kind, "fast_question");
