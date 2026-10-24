@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# bin/moe-daemon: Launcher for always-on pi-moe tmux session & systemd service
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+STATE_DIR="${MOE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/pi-moe}"
+FOCUS_PATH="${STATE_DIR}/focus.md"
+EXTENSION_PATH="${REPO_ROOT}/src/extension.ts"
+TMUX_SESSION="pi-moe"
+
+# 1. Ensure state directory and focus.md are initialized
+"${REPO_ROOT}/bin/moe-init" >/dev/null 2>&1 || true
+
+# Check for --dry-run or --check
+DRY_RUN=0
+CHECK_ONLY=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    --check)
+      CHECK_ONLY=1
+      ;;
+  esac
+done
+
+# Validate environment and requirements
+ERRORS=()
+
+if [[ ! -f "${EXTENSION_PATH}" ]]; then
+  ERRORS+=("Missing extension file: ${EXTENSION_PATH}")
+fi
+
+if [[ ! -f "${FOCUS_PATH}" ]]; then
+  ERRORS+=("Missing focus.md: ${FOCUS_PATH}")
+fi
+
+if ! command -v tmux >/dev/null 2>&1; then
+  ERRORS+=("tmux is not installed or not in PATH")
+fi
+
+if ! command -v ob-cli >/dev/null 2>&1 && ! command -v ob >/dev/null 2>&1; then
+  # ob-cli is optional or warning if missing, but let's note it
+  :
+fi
+
+if [[ ${#ERRORS[@]} -gt 0 ]]; then
+  echo "moe-daemon checks failed:" >&2
+  for err in "${ERRORS[@]}"; do
+    echo "  - $err" >&2
+  done
+  exit 1
+fi
+
+LAUNCH_CMD="PI_ROLE=moe MOE_ENABLED=1 tmux new-session -A -s ${TMUX_SESSION} \"pi -e ${EXTENSION_PATH} --remote\""
+
+if [[ "${CHECK_ONLY}" -eq 1 ]]; then
+  echo "moe-daemon: check passed. State dir: ${STATE_DIR}, focus.md: present."
+  exit 0
+fi
+
+if [[ "${DRY_RUN}" -eq 1 ]]; then
+  echo "moe-daemon: dry-run checks passed."
+  echo "Environment: PI_ROLE=moe MOE_ENABLED=1 MOE_STATE_DIR=${STATE_DIR}"
+  echo "Launch command: ${LAUNCH_CMD}"
+  exit 0
+fi
+
+# Normal mode: Run under persistent tmux session
+export PI_ROLE="moe"
+export MOE_ENABLED="1"
+export MOE_STATE_DIR="${STATE_DIR}"
+
+# Check if session already exists
+if tmux has-session -t "${TMUX_SESSION}" 2>/dev/null; then
+  echo "Attaching to existing ${TMUX_SESSION} session..."
+  exec tmux attach-session -t "${TMUX_SESSION}"
+else
+  echo "Creating new ${TMUX_SESSION} session..."
+  exec tmux new-session -s "${TMUX_SESSION}" "pi -e ${EXTENSION_PATH} --remote"
+fi

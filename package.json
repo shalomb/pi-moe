@@ -8,12 +8,21 @@
   "exports": {
     ".": "./src/index.ts",
     "./xdg": "./src/xdg.ts",
-    "./dispatch": "./src/dispatch.ts"
+    "./dispatch": "./src/dispatch.ts",
+    "./extension": "./src/extension.ts",
+    "./groom": "./src/groom.ts",
+    "./skills-register": "./src/skills-register.ts"
   },
   "bin": {
     "moe-init": "./bin/moe-init",
     "moe-memory": "./bin/moe-memory",
-    "moe-dispatch": "./bin/moe-dispatch"
+    "moe-dispatch": "./bin/moe-dispatch",
+    "moe-daemon": "./bin/moe-daemon"
+  },
+  "pi": {
+    "extensions": [
+      "./src/extension.ts"
+    ]
   },
   "scripts": {
     "test": "node --import tsx --test test/*.test.ts",

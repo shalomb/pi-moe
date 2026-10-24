@@ -1,0 +1,416 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-10-24T20:56:01.282Z",
+  "skills": {
+    "todo-navigator": {
+      "status": "verified",
+      "roles": [
+        "moe",
+        "builder",
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "todo-nav",
+        "todo"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "git-repo-discovery": {
+      "status": "verified",
+      "roles": [
+        "moe",
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "git-find-repos",
+        "git rev-parse"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "obsidian-notetaker": {
+      "status": "verified",
+      "roles": [
+        "moe",
+        "librarian"
+      ],
+      "deterministicEntrypoints": [
+        "ob-cli",
+        "ob"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "daily-status": {
+      "status": "verified",
+      "roles": [
+        "moe",
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "daily-status"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "daily-standup": {
+      "status": "verified",
+      "roles": [
+        "moe"
+      ],
+      "deterministicEntrypoints": [
+        "daily-standup"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "iteration-planner": {
+      "status": "verified",
+      "roles": [
+        "moe"
+      ],
+      "deterministicEntrypoints": [
+        "iteration-planner"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "tmux-remote-control": {
+      "status": "verified",
+      "roles": [
+        "moe",
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "tmux",
+        "moe-daemon"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "modern-cli-overrides": {
+      "status": "verified",
+      "roles": [
+        "builder",
+        "reviewer",
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "rg",
+        "fd",
+        "jq",
+        "yq"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "test-driven-development": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "npm test",
+        "pytest"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "farley-tdd": {
+      "status": "verified",
+      "roles": [
+        "builder",
+        "reviewer"
+      ],
+      "deterministicEntrypoints": [
+        "npm test"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "git-commit-formatter": {
+      "status": "verified",
+      "roles": [
+        "builder",
+        "librarian",
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "git commit"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "git-safety-guardrails": {
+      "status": "verified",
+      "roles": [
+        "builder",
+        "librarian",
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "git status"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "verification-before-completion": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "npm test",
+        "npm run check"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "systematic-debugging": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "node --inspect"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "using-git-worktrees": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "git worktree"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "ast-grep": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "sg"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "lsp-code-analysis": {
+      "status": "verified",
+      "roles": [
+        "builder",
+        "reviewer"
+      ],
+      "deterministicEntrypoints": [
+        "lsp-cli"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "uv": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "uv",
+        "uvx"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "terraform-dev": {
+      "status": "verified",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [
+        "terraform",
+        "tofu"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "lessons-learned": {
+      "status": "verified",
+      "roles": [
+        "librarian"
+      ],
+      "deterministicEntrypoints": [
+        "ob-cli --mode=memory"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "architecture-decision-records": {
+      "status": "verified",
+      "roles": [
+        "librarian",
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "adr"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "web-to-markdown": {
+      "status": "verified",
+      "roles": [
+        "librarian"
+      ],
+      "deterministicEntrypoints": [
+        "curl",
+        "html-to-md"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "lisa-planning-agent": {
+      "status": "verified",
+      "roles": [
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "lisa"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "marge-product-agent": {
+      "status": "verified",
+      "roles": [
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "marge"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "c4-architecture": {
+      "status": "verified",
+      "roles": [
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "c4"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "brainstorming": {
+      "status": "verified",
+      "roles": [
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "brainstorm"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "writing-plans": {
+      "status": "verified",
+      "roles": [
+        "planner"
+      ],
+      "deterministicEntrypoints": [
+        "write-plan"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "bart-adversarial-reviewer": {
+      "status": "verified",
+      "roles": [
+        "reviewer"
+      ],
+      "deterministicEntrypoints": [
+        "bart"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "test-design-review": {
+      "status": "verified",
+      "roles": [
+        "reviewer"
+      ],
+      "deterministicEntrypoints": [
+        "test-review"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "software-design-principles": {
+      "status": "verified",
+      "roles": [
+        "reviewer"
+      ],
+      "deterministicEntrypoints": [
+        "design-principles"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "git-forensics": {
+      "status": "verified",
+      "roles": [
+        "reviewer"
+      ],
+      "deterministicEntrypoints": [
+        "git log -S"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "skill-creator": {
+      "status": "verified",
+      "roles": [
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "skill-new"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "lovejoy-release-agent": {
+      "status": "verified",
+      "roles": [
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "lovejoy"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "github-cli": {
+      "status": "verified",
+      "roles": [
+        "ops"
+      ],
+      "deterministicEntrypoints": [
+        "gh"
+      ],
+      "lastVerified": "2026-10-24T22:00:00.000Z",
+      "frictionCount": 0
+    },
+    "test-skill": {
+      "status": "needs-script",
+      "roles": [
+        "builder"
+      ],
+      "deterministicEntrypoints": [],
+      "lastVerified": "2026-10-24T20:54:07.455Z",
+      "frictionCount": 4
+    }
+  }
+}

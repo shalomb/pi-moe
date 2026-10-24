@@ -1,0 +1,15 @@
+[Unit]
+Description=Moe: Always-on pi Companion & Mixture-of-Experts Orchestrator
+After=network-online.target
+
+[Service]
+Type=simple
+OOMScoreAdjust=-500
+MemoryMax=1G
+Restart=always
+RestartSec=3
+Environment=PI_ROLE=moe MOE_ENABLED=1
+ExecStart=%h/projects/shalomb/pi-moe/bin/moe-daemon
+
+[Install]
+WantedBy=default.target
