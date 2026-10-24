@@ -121,4 +121,70 @@ describe("Quote-Free DWIM moe CLI (src/cli.ts)", () => {
       assert.ok(out.output.includes("Focus:"));
     });
   });
+
+  describe("Behavioral side-effect execution (isolated temp env, no --dry-run)", () => {
+    it("executes memory_capture against isolated MOE_STATE_DIR and ob-cli --json retrieves the captured note", async () => {
+      const fs = await import("node:fs");
+      const os = await import("node:os");
+      const path = await import("node:path");
+      const { execFileSync } = await import("node:child_process");
+
+      const tmpState = fs.mkdtempSync(path.join(os.tmpdir(), "pi-moe-cli-mem-"));
+      try {
+        const out = await executeCli(
+          ["note:", "verify", "farley", "behavioral", "capture"],
+          { env: { ...process.env, MOE_STATE_DIR: tmpState } },
+        );
+        assert.equal(out.intent.kind, "memory_capture");
+        assert.equal(out.dryRun, false);
+
+        const memDir = path.join(tmpState, "memory");
+        const jsonOut = execFileSync("ob-cli", ["--dir", memDir, "--tag", "inbox", "--json"], {
+          encoding: "utf8",
+        });
+        const notes = JSON.parse(jsonOut);
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0].path, "inbox.md");
+
+        const catOut = execFileSync("ob-cli", ["--dir", memDir, "--cat", "inbox.md"], {
+          encoding: "utf8",
+        });
+        assert.match(catOut, /verify farley behavioral capture/);
+      } finally {
+        fs.rmSync(tmpState, { recursive: true, force: true });
+      }
+    });
+
+    it("executes todo_ensure idempotently against an isolated repo (creates once, skips duplicate on second run)", async () => {
+      const fs = await import("node:fs");
+      const os = await import("node:os");
+      const path = await import("node:path");
+
+      const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pi-moe-cli-todo-"));
+      const tmpRepo = path.join(tmpRoot, "sample-repo");
+      const tmpCache = path.join(tmpRoot, "cache");
+      fs.mkdirSync(tmpRepo, { recursive: true });
+      fs.mkdirSync(tmpCache, { recursive: true });
+
+      try {
+        const env = { ...process.env, XDG_CACHE_HOME: tmpCache };
+        const first = await executeCli(
+          ["--project", tmpRepo, "-", "can", "you", "ensure", "we", "have", "a", "task", "down", "for", "project", tmpRepo, "to", "wire", "up", "healthcheck"],
+          { env },
+        );
+        assert.equal(first.intent.kind, "todo_ensure");
+        assert.equal((first.data as any)?.created, true);
+
+        const second = await executeCli(
+          ["--project", tmpRepo, "-", "can", "you", "ensure", "we", "have", "a", "task", "down", "for", "project", tmpRepo, "to", "wire", "up", "healthcheck"],
+          { env },
+        );
+        assert.equal(second.intent.kind, "todo_ensure");
+        assert.equal((second.data as any)?.exists, true);
+        assert.match(second.output, /already exists/i);
+      } finally {
+        fs.rmSync(tmpRoot, { recursive: true, force: true });
+      }
+    });
+  });
 });

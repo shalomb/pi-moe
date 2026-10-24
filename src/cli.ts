@@ -117,7 +117,7 @@ export function classifyUtterance(utterance: string): ClassifiedIntent {
   // e.g. "can you ensure we have a task down for project <repo> [to/for] <task>"
   // e.g. "todo <repo>: <task>"
   // e.g. "task add <repo>: <task>"
-  const ensureRegex = /(?:can you\s+)?ensure (?:we have )?a task (?:down )?for project\s+([a-zA-Z0-9_-]+)\s+(?:to|for)\s+(.*)/i;
+  const ensureRegex = /(?:can you\s+)?ensure (?:we have )?a task (?:down )?for project\s+([^\s]+)\s+(?:to|for)\s+(.*)/i;
   const ensureMatch = text.match(ensureRegex);
   if (ensureMatch) {
     return {
@@ -127,7 +127,7 @@ export function classifyUtterance(utterance: string): ClassifiedIntent {
     };
   }
 
-  const todoColonRegex = /^(?:todo|task)\s+([a-zA-Z0-9_-]+):\s*(.*)$/i;
+  const todoColonRegex = /^(?:todo|task)\s+([^\s:]+):\s*(.*)$/i;
   const colonMatch = text.match(todoColonRegex);
   if (colonMatch) {
     return {
@@ -272,7 +272,12 @@ ${recentReceipts.length > 0 ? recentReceipts.join("\n") : "(none)"}`;
 /**
  * Handles todo_ensure idempotently
  */
-export function handleTodoEnsure(repoName: string, taskTitle: string, dryRun: boolean): { output: string; data?: unknown } {
+export function handleTodoEnsure(
+  repoName: string,
+  taskTitle: string,
+  dryRun: boolean,
+  env: Record<string, string | undefined> = process.env,
+): { output: string; data?: unknown } {
   const repoPath = resolveProjectRepo(repoName);
   if (!repoPath) {
     return {
@@ -291,6 +296,7 @@ export function handleTodoEnsure(repoName: string, taskTitle: string, dryRun: bo
   // 1. Run `todo list` in repoPath
   const listRes = spawnSync("todo", ["list"], {
     cwd: repoPath,
+    env: env as NodeJS.ProcessEnv,
     encoding: "utf8",
     timeout: 3000,
   });
@@ -306,6 +312,7 @@ export function handleTodoEnsure(repoName: string, taskTitle: string, dryRun: bo
   // 2. Add task
   const addRes = spawnSync("todo", ["add", taskTitle], {
     cwd: repoPath,
+    env: env as NodeJS.ProcessEnv,
     encoding: "utf8",
     timeout: 3000,
   });
@@ -319,10 +326,17 @@ export function handleTodoEnsure(repoName: string, taskTitle: string, dryRun: bo
 /**
  * Handles memory capture via ob-cli
  */
-export function handleMemoryCapture(prompt: string, targetMode: "memory" | "obsidian", dryRun: boolean): { output: string; data?: unknown } {
+export function handleMemoryCapture(
+  prompt: string,
+  targetMode: "memory" | "obsidian",
+  dryRun: boolean,
+  env: Record<string, string | undefined> = process.env,
+): { output: string; data?: unknown } {
+  const stateDir = resolveStateDir(env);
+  const memDir = path.join(stateDir, "memory");
   const args = targetMode === "obsidian"
     ? ["--mode=obsidian", "Incoming.md", "--capture", prompt, "--tags", "inbox,cli", "--title", "Moe Inbox"]
-    : ["--mode=memory", "inbox.md", "--capture", prompt, "--tags", "inbox,cli", "--title", "Moe Inbox"];
+    : ["--mode=memory", "--dir", memDir, "inbox.md", "--capture", prompt, "--tags", "inbox,cli", "--title", "Moe Inbox"];
 
   if (dryRun) {
     return {
@@ -331,7 +345,11 @@ export function handleMemoryCapture(prompt: string, targetMode: "memory" | "obsi
     };
   }
 
-  const res = spawnSync("ob-cli", args, { encoding: "utf8", timeout: 5000 });
+  const res = spawnSync("ob-cli", args, {
+    encoding: "utf8",
+    env: { ...(env as NodeJS.ProcessEnv), MOE_STATE_DIR: stateDir },
+    timeout: 5000,
+  });
   return {
     output: res.stdout.trim() || `Captured to ${targetMode} inbox.`,
     data: { exitCode: res.status, stdout: res.stdout.trim() },
@@ -385,7 +403,11 @@ export function handleFastQuestion(prompt: string, options: ParsedArgs): { outpu
 /**
  * Main execute entry point
  */
-export async function executeCli(argv: string[]): Promise<CliExecutionResult> {
+export async function executeCli(
+  argv: string[],
+  options?: { env?: Record<string, string | undefined> },
+): Promise<CliExecutionResult> {
+  const env = options?.env || process.env;
   const parsed = foldCliArgs(argv);
   const intent = classifyUtterance(parsed.utterance);
 
@@ -401,13 +423,23 @@ export async function executeCli(argv: string[]): Promise<CliExecutionResult> {
   let data: unknown;
 
   if (intent.kind === "status") {
-    output = handleStatus();
+    output = handleStatus(resolveStateDir(env));
   } else if (intent.kind === "todo_ensure") {
-    const res = handleTodoEnsure(intent.repo || parsed.project || "pi-moe", intent.taskTitle || parsed.utterance, parsed.dryRun);
+    const res = handleTodoEnsure(
+      intent.repo || parsed.project || "pi-moe",
+      intent.taskTitle || parsed.utterance,
+      parsed.dryRun,
+      env,
+    );
     output = res.output;
     data = res.data;
   } else if (intent.kind === "memory_capture") {
-    const res = handleMemoryCapture(intent.prompt || parsed.utterance, intent.targetMode || "memory", parsed.dryRun);
+    const res = handleMemoryCapture(
+      intent.prompt || parsed.utterance,
+      intent.targetMode || "memory",
+      parsed.dryRun,
+      env,
+    );
     output = res.output;
     data = res.data;
   } else if (intent.kind === "delegate") {
@@ -419,6 +451,7 @@ export async function executeCli(argv: string[]): Promise<CliExecutionResult> {
         role: (intent.role || "builder") as RoleName,
         task: intent.prompt || "",
         cwd: process.cwd(),
+        env: env as Record<string, string>,
       });
       output = `Delegate dispatched: ${res.plan.id} (${res.receipt?.status ?? "running"})`;
       data = res;
