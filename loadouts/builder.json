@@ -1,0 +1,25 @@
+{
+  "role": "builder",
+  "model": "antigravity/gemini-3.8-flash",
+  "thinkingLevel": "low",
+  "fallbackModel": "anthropic/claude-sonnet-5-5",
+  "tier1": [
+    "modern-cli-overrides",
+    "test-driven-development",
+    "farley-tdd",
+    "git-commit-formatter",
+    "git-safety-guardrails",
+    "verification-before-completion",
+    "todo-navigator"
+  ],
+  "tier2": [
+    "systematic-debugging",
+    "using-git-worktrees",
+    "ast-grep",
+    "lsp-code-analysis",
+    "uv",
+    "terraform-dev"
+  ],
+  "tier3": [],
+  "hide": []
+}

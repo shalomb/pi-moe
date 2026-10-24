@@ -1,0 +1,82 @@
+#!/usr/bin/env -S node --import tsx
+import fs from "node:fs";
+import path from "node:path";
+import { getStatePaths, validateFocus, validateMemoryNote } from "../src/xdg.ts";
+
+const args = process.argv.slice(2);
+const command = args[0];
+const jsonOutput = args.includes("--json");
+
+function printResult(result) {
+  if (jsonOutput) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(result);
+  }
+}
+
+try {
+  const paths = getStatePaths();
+
+  switch (command) {
+    case "validate-focus": {
+      const targetFile = args[1] && !args[1].startsWith("--") ? path.resolve(args[1]) : paths.focusPath;
+      if (!fs.existsSync(targetFile)) {
+        throw new Error(`focus file not found: ${targetFile}`);
+      }
+      const content = fs.readFileSync(targetFile, "utf8");
+      const res = validateFocus(content);
+      if (jsonOutput) {
+        console.log(JSON.stringify(res, null, 2));
+      } else {
+        console.log(`Validation for ${targetFile}: ${res.valid ? "VALID" : "INVALID"} (${res.tokenCount} tokens)`);
+        for (const diag of res.diagnostics) {
+          console.log(`  [${diag.code}] ${diag.message}`);
+        }
+      }
+      if (!res.valid) {
+        process.exitCode = 1;
+      }
+      break;
+    }
+
+    case "validate-note": {
+      const targetFile = args[1];
+      if (!targetFile || targetFile.startsWith("--")) {
+        throw new Error("Usage: moe-memory validate-note <file-path> [--json]");
+      }
+      const resolved = path.resolve(targetFile);
+      if (!fs.existsSync(resolved)) {
+        throw new Error(`Note file not found: ${resolved}`);
+      }
+      const content = fs.readFileSync(resolved, "utf8");
+      const res = validateMemoryNote(content);
+      if (jsonOutput) {
+        console.log(JSON.stringify(res, null, 2));
+      } else {
+        console.log(`Validation for ${resolved}: ${res.valid ? "VALID" : "INVALID"}`);
+        for (const diag of res.diagnostics) {
+          console.log(`  [${diag.code}] ${diag.message}`);
+        }
+      }
+      if (!res.valid) {
+        process.exitCode = 1;
+      }
+      break;
+    }
+
+    case "paths": {
+      printResult(paths);
+      break;
+    }
+
+    default: {
+      console.error("Usage: moe-memory <validate-focus|validate-note|paths> [args...] [--json]");
+      process.exit(1);
+    }
+  }
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`Error: ${message}`);
+  process.exit(1);
+}

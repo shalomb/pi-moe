@@ -1,0 +1,20 @@
+{
+  "role": "planner",
+  "model": "antigravity/gemini-3.8-flash",
+  "thinkingLevel": "medium",
+  "fallbackModel": "anthropic/claude-sonnet-5-5",
+  "tier1": [
+    "lisa-planning-agent",
+    "marge-product-agent",
+    "todo-navigator",
+    "architecture-decision-records"
+  ],
+  "tier2": [
+    "c4-architecture",
+    "brainstorming",
+    "writing-plans",
+    "git-repo-discovery"
+  ],
+  "tier3": [],
+  "hide": []
+}

@@ -1,0 +1,19 @@
+{
+  "role": "moe",
+  "model": "antigravity/gemini-3.8-flash",
+  "thinkingLevel": "minimal",
+  "fallbackModel": "anthropic/claude-sonnet-5-5",
+  "tier1": [
+    "todo-navigator",
+    "git-repo-discovery",
+    "obsidian-notetaker"
+  ],
+  "tier2": [
+    "daily-status",
+    "daily-standup",
+    "iteration-planner",
+    "tmux-remote-control"
+  ],
+  "tier3": [],
+  "hide": []
+}

@@ -1,0 +1,21 @@
+#!/usr/bin/env -S node --import tsx
+import { bootstrapXdgState } from "../src/xdg.ts";
+
+const args = process.argv.slice(2);
+const jsonOutput = args.includes("--json");
+
+try {
+  const result = bootstrapXdgState();
+  if (jsonOutput) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`pi-moe state initialized at: ${result.stateDir}`);
+    console.log(`- focus: ${result.focusPath} (created: ${result.createdFocus}, valid: ${result.validation.valid})`);
+    console.log(`- memory: ${result.memoryDir}`);
+    console.log(`- receipts: ${result.receiptsDir}`);
+  }
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`Error initializing pi-moe state: ${message}`);
+  process.exit(1);
+}

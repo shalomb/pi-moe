@@ -1,0 +1,19 @@
+{
+  "role": "reviewer",
+  "model": "antigravity/gemini-3.8-flash",
+  "thinkingLevel": "medium",
+  "fallbackModel": "anthropic/claude-sonnet-5-5",
+  "tier1": [
+    "bart-adversarial-reviewer",
+    "test-design-review",
+    "farley-tdd",
+    "modern-cli-overrides"
+  ],
+  "tier2": [
+    "software-design-principles",
+    "git-forensics",
+    "lsp-code-analysis"
+  ],
+  "tier3": [],
+  "hide": []
+}

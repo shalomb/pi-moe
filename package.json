@@ -1,0 +1,25 @@
+{
+  "name": "@shalomb/pi-moe",
+  "version": "0.1.0",
+  "description": "Always-on, memory-disciplined workstation companion and Mixture-of-Experts delegate orchestrator for pi",
+  "type": "module",
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./xdg": "./src/xdg.ts",
+    "./dispatch": "./src/dispatch.ts"
+  },
+  "bin": {
+    "moe-init": "./bin/moe-init",
+    "moe-memory": "./bin/moe-memory",
+    "moe-dispatch": "./bin/moe-dispatch"
+  },
+  "scripts": {
+    "test": "node --import tsx --test test/*.test.ts",
+    "check": "node --import tsx --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}

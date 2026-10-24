@@ -1,0 +1,20 @@
+{
+  "role": "ops",
+  "model": "antigravity/gemini-3.8-flash",
+  "thinkingLevel": "minimal",
+  "fallbackModel": "anthropic/claude-sonnet-5-5",
+  "tier1": [
+    "tmux-remote-control",
+    "skill-creator",
+    "lovejoy-release-agent",
+    "modern-cli-overrides"
+  ],
+  "tier2": [
+    "github-cli",
+    "git-commit-formatter",
+    "git-safety-guardrails",
+    "daily-status"
+  ],
+  "tier3": [],
+  "hide": []
+}

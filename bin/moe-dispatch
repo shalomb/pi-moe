@@ -1,0 +1,131 @@
+#!/usr/bin/env -S node --import tsx
+import { executeDispatch, buildDispatchPlan } from "../src/dispatch.ts";
+
+function printUsage() {
+  console.log(`Usage: moe-dispatch --role=<role> --task="<task>" [options]
+
+Options:
+  --role=<role>           Required role: moe | librarian | planner | builder | reviewer | ops
+  --task="<task>"         Task prompt or description
+  --model=<model>         Explicit model override (default: per-role mapping)
+  --memory=<limit>        MemoryMax limit for cgroup (default: per-role, e.g. 4G for builder)
+  --oom-adjust=<score>    OOMScoreAdjust value (default: 500)
+  --cwd=<path>            Working directory for worker
+  --cmd="<args...>"       Command to run instead of 'pi --mode json ...'
+  --dry-run               Print dispatch plan and environment JSON without executing
+  --no-systemd            Disable systemd-run cgroup isolation
+  --json                  Output raw JSON receipt
+`);
+}
+
+function parseCliArgs(argv) {
+  const flags = {};
+  const extraArgs = [];
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith("--")) {
+      const eqIndex = arg.indexOf("=");
+      if (eqIndex !== -1) {
+        const key = arg.slice(2, eqIndex);
+        const val = arg.slice(eqIndex + 1);
+        flags[key] = val;
+      } else {
+        const key = arg.slice(2);
+        if (i + 1 < argv.length && !argv[i + 1].startsWith("--")) {
+          flags[key] = argv[i + 1];
+          i++;
+        } else {
+          flags[key] = true;
+        }
+      }
+    } else {
+      extraArgs.push(arg);
+    }
+  }
+
+  return { flags, extraArgs };
+}
+
+const { flags } = parseCliArgs(process.argv.slice(2));
+
+if (flags.help || flags.h) {
+  printUsage();
+  process.exit(0);
+}
+
+const role = flags.role || "builder";
+const task = flags.task || flags._ || "";
+const dryRun = Boolean(flags["dry-run"]);
+const disableSystemd = Boolean(flags["no-systemd"]);
+const jsonOutput = Boolean(flags.json);
+const memoryLimit = flags.memory;
+const model = flags.model;
+const cwd = flags.cwd;
+const oomScoreAdjust = flags["oom-adjust"] ? Number(flags["oom-adjust"]) : undefined;
+
+let customCommand;
+if (flags.cmd && typeof flags.cmd === "string") {
+  customCommand = flags.cmd.split(/\s+/).filter(Boolean);
+}
+
+if (!task && !dryRun) {
+  console.error("Error: --task is required unless --dry-run is specified with a task placeholder.");
+  printUsage();
+  process.exit(1);
+}
+
+try {
+  const result = executeDispatch({
+    role,
+    task: task || "(dry-run task placeholder)",
+    model,
+    memoryLimit,
+    oomScoreAdjust,
+    cwd,
+    command: customCommand,
+    dryRun,
+    disableSystemd,
+  });
+
+  if (dryRun) {
+    if (jsonOutput) {
+      console.log(JSON.stringify(result.plan, null, 2));
+    } else {
+      console.log("=== Dispatch Plan (Dry Run) ===");
+      console.log(`Role: ${result.plan.role}`);
+      console.log(`Unit: ${result.plan.unitName}`);
+      console.log(`Systemd Isolation: ${result.plan.useSystemd}`);
+      console.log(`Model: ${result.plan.model}`);
+      console.log(`MemoryMax: ${result.plan.memoryLimit}`);
+      console.log(`OOMScoreAdjust: ${result.plan.oomScoreAdjust}`);
+      console.log(`Command: ${result.plan.command} ${result.plan.args.join(" ")}`);
+      console.log(`Receipt Path: ${result.plan.receiptPath}`);
+      console.log("Environment:");
+      console.log(`  PI_ROLE=${result.plan.env.PI_ROLE}`);
+      console.log(`  TODO_OWNER=${result.plan.env.TODO_OWNER}`);
+      console.log(`  MOE_STATE_DIR=${result.plan.env.MOE_STATE_DIR}`);
+    }
+  } else if (result.receipt) {
+    if (jsonOutput) {
+      console.log(JSON.stringify(result.receipt, null, 2));
+    } else {
+      console.log(`Dispatch ID: ${result.receipt.id}`);
+      console.log(`Role: ${result.receipt.role}`);
+      console.log(`Status: ${result.receipt.status} (exit ${result.receipt.exitCode})`);
+      console.log(`Duration: ${result.receipt.durationMs}ms`);
+      console.log(`Summary: ${result.receipt.summary}`);
+      console.log(`Receipt saved: ${result.plan.receiptPath}`);
+      if (result.receipt.skillFriction.length > 0) {
+        console.log(`Skill friction noticed: ${result.receipt.skillFriction.join(", ")}`);
+      }
+    }
+    if (result.receipt.status !== "completed") {
+      process.exit(result.receipt.exitCode || 1);
+    }
+  }
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`Dispatch error: ${message}`);
+  process.exit(1);
+}

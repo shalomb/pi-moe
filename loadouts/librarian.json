@@ -1,0 +1,18 @@
+{
+  "role": "librarian",
+  "model": "antigravity/gemini-3.8-flash",
+  "thinkingLevel": "low",
+  "fallbackModel": "anthropic/claude-sonnet-5-5",
+  "tier1": [
+    "obsidian-notetaker",
+    "lessons-learned",
+    "architecture-decision-records"
+  ],
+  "tier2": [
+    "web-to-markdown",
+    "git-commit-formatter",
+    "git-safety-guardrails"
+  ],
+  "tier3": [],
+  "hide": []
+}
