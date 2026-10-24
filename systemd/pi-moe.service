@@ -8,8 +8,9 @@ OOMScoreAdjust=-500
 MemoryMax=1G
 Restart=always
 RestartSec=3
+Environment=PATH=%h/.local/bin:%h/.pi/agent/bin:%h/.cargo/bin:/usr/local/bin:/usr/bin:/bin
 Environment=PI_ROLE=moe MOE_ENABLED=1
-ExecStart=%h/projects/shalomb/pi-moe/bin/moe-daemon
+ExecStart=%h/projects/shalomb/pi-moe/bin/moe-daemon --systemd
 
 [Install]
 WantedBy=default.target

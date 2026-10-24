@@ -30,7 +30,7 @@ describe("systemd --user Service Unit & Daemon Launcher (systemd/ & bin/moe-daem
     assert.match(content, /WantedBy=default\.target/);
   });
 
-  it("bin/moe-daemon is executable and supports --dry-run / --check", () => {
+  it("bin/moe-daemon is executable and supports --dry-run / --check / --systemd", () => {
     assert.ok(fs.existsSync(daemonPath), "bin/moe-daemon must exist");
     const stat = fs.statSync(daemonPath);
     // Check executable bit
@@ -45,6 +45,11 @@ describe("systemd --user Service Unit & Daemon Launcher (systemd/ & bin/moe-daem
     assert.match(dryRunOutput, /tmux new-session/);
     assert.match(dryRunOutput, /-e .*src\/extension\.ts/);
     assert.match(dryRunOutput, /--remote/);
+
+    const systemdDryOutput = execFileSync(daemonPath, ["--systemd", "--dry-run"], {
+      encoding: "utf8",
+    });
+    assert.match(systemdDryOutput, /tmux new-session -d -s pi-moe/);
 
     const checkOutput = execFileSync(daemonPath, ["--check"], {
       encoding: "utf8",

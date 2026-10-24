@@ -12,9 +12,10 @@ TMUX_SESSION="pi-moe"
 # 1. Ensure state directory and focus.md are initialized
 "${REPO_ROOT}/bin/moe-init" >/dev/null 2>&1 || true
 
-# Check for --dry-run or --check
+# Check for --dry-run, --check, or --systemd
 DRY_RUN=0
 CHECK_ONLY=0
+SYSTEMD_MODE=0
 
 for arg in "$@"; do
   case "$arg" in
@@ -23,6 +24,9 @@ for arg in "$@"; do
       ;;
     --check)
       CHECK_ONLY=1
+      ;;
+    --systemd)
+      SYSTEMD_MODE=1
       ;;
   esac
 done
@@ -55,7 +59,11 @@ if [[ ${#ERRORS[@]} -gt 0 ]]; then
   exit 1
 fi
 
-LAUNCH_CMD="PI_ROLE=moe MOE_ENABLED=1 tmux new-session -A -s ${TMUX_SESSION} \"pi -e ${EXTENSION_PATH} --remote\""
+if [[ "${SYSTEMD_MODE}" -eq 1 ]]; then
+  LAUNCH_CMD="PI_ROLE=moe MOE_ENABLED=1 tmux new-session -d -s ${TMUX_SESSION} -c ${REPO_ROOT} \"pi -e ${EXTENSION_PATH} --remote\""
+else
+  LAUNCH_CMD="PI_ROLE=moe MOE_ENABLED=1 tmux new-session -A -s ${TMUX_SESSION} -c ${REPO_ROOT} \"pi -e ${EXTENSION_PATH} --remote\""
+fi
 
 if [[ "${CHECK_ONLY}" -eq 1 ]]; then
   echo "moe-daemon: check passed. State dir: ${STATE_DIR}, focus.md: present."
@@ -74,11 +82,22 @@ export PI_ROLE="moe"
 export MOE_ENABLED="1"
 export MOE_STATE_DIR="${STATE_DIR}"
 
-# Check if session already exists
+if [[ "${SYSTEMD_MODE}" -eq 1 ]]; then
+  if ! tmux has-session -t "${TMUX_SESSION}" 2>/dev/null; then
+    tmux new-session -d -s "${TMUX_SESSION}" -c "${REPO_ROOT}" "PI_ROLE=moe MOE_ENABLED=1 MOE_STATE_DIR=${STATE_DIR} pi -e ${EXTENSION_PATH} --remote"
+  fi
+  trap 'tmux kill-session -t "${TMUX_SESSION}" 2>/dev/null || true; exit 0' SIGTERM SIGINT
+  while tmux has-session -t "${TMUX_SESSION}" 2>/dev/null; do
+    sleep 2
+  done
+  exit 1
+fi
+
+# Interactive mode: attach or create
 if tmux has-session -t "${TMUX_SESSION}" 2>/dev/null; then
   echo "Attaching to existing ${TMUX_SESSION} session..."
   exec tmux attach-session -t "${TMUX_SESSION}"
 else
   echo "Creating new ${TMUX_SESSION} session..."
-  exec tmux new-session -s "${TMUX_SESSION}" "pi -e ${EXTENSION_PATH} --remote"
+  exec tmux new-session -s "${TMUX_SESSION}" -c "${REPO_ROOT}" "PI_ROLE=moe MOE_ENABLED=1 MOE_STATE_DIR=${STATE_DIR} pi -e ${EXTENSION_PATH} --remote"
 fi
