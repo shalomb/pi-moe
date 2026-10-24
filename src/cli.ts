@@ -7,6 +7,7 @@ import { executeDispatch, type RoleName } from "./dispatch.ts";
 
 export interface ParsedArgs {
   dryRun: boolean;
+  debug: boolean;
   json: boolean;
   fast: boolean;
   role?: string;
@@ -15,7 +16,7 @@ export interface ParsedArgs {
   utterance: string;
 }
 
-export type IntentKind = "status" | "attach" | "todo_ensure" | "memory_capture" | "fast_question" | "delegate";
+export type IntentKind = "status" | "attach" | "gum_query" | "todo_ensure" | "memory_capture" | "fast_question" | "delegate";
 
 export interface ClassifiedIntent {
   kind: IntentKind;
@@ -30,16 +31,18 @@ export interface ClassifiedIntent {
 export interface CliExecutionResult {
   intent: ClassifiedIntent;
   dryRun: boolean;
+  debug?: boolean;
   output: string;
   data?: unknown;
 }
 
 /**
  * Strips leading separator ('-' or '--') and folds non-flag words into one natural utterance string,
- * while respecting control flags: --dry-run, --json, --fast, --role <role>, --project <repo>, --send.
+ * while respecting control flags: --dry-run, --debug/-d, --json, --fast, --role <role>, --project <repo>, --send.
  */
 export function foldCliArgs(argv: string[]): ParsedArgs {
   let dryRun = false;
+  let debug = process.env.MOE_DEBUG === "1";
   let json = false;
   let fast = false;
   let sendToDaemon = process.env.MOE_SEND_TO_DAEMON === "1";
@@ -59,6 +62,9 @@ export function foldCliArgs(argv: string[]): ParsedArgs {
 
     if (arg === "--dry-run") {
       dryRun = true;
+      i++;
+    } else if (arg === "--debug" || arg === "-d") {
+      debug = true;
       i++;
     } else if (arg === "--json") {
       json = true;
@@ -93,6 +99,7 @@ export function foldCliArgs(argv: string[]): ParsedArgs {
   const utterance = words.join(" ").trim();
   return {
     dryRun,
+    debug,
     json,
     fast,
     role,
@@ -169,7 +176,16 @@ export function classifyUtterance(utterance: string): ClassifiedIntent {
     };
   }
 
-  // 5. Fast question / default fallback
+  // 5. Workstation gum repo queries:
+  // e.g. "how many repos does gum have?", "list gum repos", "find repo foo in gum"
+  if (/\bgum\b/i.test(text) && /\b(repos?|projects?|count|how many|list|find)\b/i.test(text)) {
+    return {
+      kind: "gum_query",
+      prompt: text,
+    };
+  }
+
+  // 6. Fast question / default fallback
   return {
     kind: "fast_question",
     prompt: text,
@@ -359,10 +375,55 @@ export function handleMemoryCapture(
   };
 }
 
+function debugLog(enabled: boolean, label: string, details: Record<string, unknown>): void {
+  if (!enabled) return;
+  const pairs = Object.entries(details)
+    .map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`)
+    .join(" ");
+  process.stderr.write(`[moe:debug] ${label}: ${pairs}\n`);
+}
+
+/**
+ * Deterministic gum projects query handler (<100ms, zero LLM spin-up)
+ */
+export function handleGumQuery(prompt: string, options: ParsedArgs): { output: string; data?: unknown } {
+  if (options.dryRun) {
+    return {
+      output: `[dry-run] Would query gum projects for: "${prompt}"`,
+      data: { command: ["gum", "projects", "--format", "simple"], prompt },
+    };
+  }
+
+  const t0 = Date.now();
+  const res = spawnSync("gum", ["projects", "--format", "simple"], {
+    encoding: "utf8",
+    timeout: 5000,
+  });
+  const elapsedMs = Date.now() - t0;
+  debugLog(options.debug, "gum_query", { cmd: "gum projects --format simple", status: res.status, elapsedMs });
+
+  const repos = (res.stdout || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  if (/how many|count/i.test(prompt)) {
+    return {
+      output: `gum indexes ${repos.length} git repositories on this workstation.`,
+      data: { count: repos.length, elapsedMs },
+    };
+  }
+
+  return {
+    output: `gum indexes ${repos.length} repositories:\n${repos.slice(0, 25).join("\n")}${repos.length > 25 ? `\n... (+${repos.length - 25} more)` : ""}`,
+    data: { count: repos.length, repos, elapsedMs },
+  };
+}
+
 /**
  * Fast-path question execution (or dry-run)
  */
-export function handleFastQuestion(prompt: string, options: ParsedArgs): { output: string; data?: unknown } {
+export function handleFastQuestion(
+  prompt: string,
+  options: ParsedArgs,
+  env: Record<string, string | undefined> = process.env,
+): { output: string; data?: unknown } {
   if (options.dryRun) {
     return {
       output: `[dry-run] Fast question prompt: "${prompt}"`,
@@ -379,7 +440,10 @@ export function handleFastQuestion(prompt: string, options: ParsedArgs): { outpu
     }
   }
 
-  // One-shot lightweight pi invocation
+  // Ground fast questions with workstation context and no extensions/skills for sub-3s response
+  const stateDir = resolveStateDir(env);
+  const contextualPrompt = `[Workstation: idun | State: ${stateDir} | Tools: gum (local git repo index), todo (shadow backlogs), ob-cli (Obsidian/XDG memory)] ${prompt}`;
+
   const piArgs = [
     "-p",
     "--provider",
@@ -389,17 +453,38 @@ export function handleFastQuestion(prompt: string, options: ParsedArgs): { outpu
     "--thinking",
     "minimal",
     "--no-session",
-    prompt,
+    "--no-skills",
+    "--tools",
+    "bash,read",
+    contextualPrompt,
   ];
 
-  const res = spawnSync("pi", piArgs, { encoding: "utf8", timeout: 30000 });
+  const t0 = Date.now();
+  debugLog(options.debug, "spawn", { cmd: "pi", args: piArgs });
+  const res = spawnSync("pi", piArgs, {
+    encoding: "utf8",
+    env: env as NodeJS.ProcessEnv,
+    timeout: 60000,
+  });
+  const elapsedMs = Date.now() - t0;
+  debugLog(options.debug, "result", {
+    status: res.status,
+    signal: res.signal,
+    error: res.error?.message,
+    elapsedMs,
+    stderr: (res.stderr || "").trim().slice(0, 200),
+  });
+
   if (res.status === 0) {
-    return { output: res.stdout.trim() };
+    return { output: res.stdout.trim(), data: { exitCode: 0, elapsedMs } };
   }
 
+  const reason = res.error?.message
+    || (res.signal ? `terminated by signal ${res.signal} after ${elapsedMs}ms` : `exit code ${res.status}`);
+  const detail = (res.stderr || res.stdout || "").trim();
   return {
-    output: res.stderr || res.stdout || "Fast question query failed",
-    data: { exitCode: res.status },
+    output: `Fast question query failed (${reason})${detail ? `: ${detail}` : ""}`,
+    data: { exitCode: res.status, signal: res.signal, error: res.error?.message, elapsedMs },
   };
 }
 
@@ -422,6 +507,14 @@ export async function executeCli(
     intent.role = parsed.role;
   }
 
+  debugLog(parsed.debug, "parsed", {
+    utterance: parsed.utterance,
+    intent: intent.kind,
+    repo: intent.repo,
+    role: intent.role,
+    dryRun: parsed.dryRun,
+  });
+
   let output = "";
   let data: unknown;
 
@@ -437,6 +530,10 @@ export async function executeCli(
       output = `Exited pi-moe session (code ${res.status ?? 0})`;
       data = { exitCode: res.status };
     }
+  } else if (intent.kind === "gum_query") {
+    const res = handleGumQuery(intent.prompt || parsed.utterance, parsed);
+    output = res.output;
+    data = res.data;
   } else if (intent.kind === "todo_ensure") {
     const res = handleTodoEnsure(
       intent.repo || parsed.project || "pi-moe",
@@ -471,7 +568,7 @@ export async function executeCli(
     }
   } else {
     // fast_question
-    const res = handleFastQuestion(intent.prompt || parsed.utterance, parsed);
+    const res = handleFastQuestion(intent.prompt || parsed.utterance, parsed, env);
     output = res.output;
     data = res.data;
   }
@@ -479,6 +576,7 @@ export async function executeCli(
   return {
     intent,
     dryRun: parsed.dryRun,
+    debug: parsed.debug,
     output,
     data,
   };

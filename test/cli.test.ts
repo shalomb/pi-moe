@@ -4,7 +4,6 @@ import {
   foldCliArgs,
   classifyUtterance,
   resolveProjectRepo,
-  handleStatus,
   executeCli,
 } from "../src/cli.ts";
 
@@ -18,8 +17,9 @@ describe("Quote-Free DWIM moe CLI (src/cli.ts)", () => {
     });
 
     it("parses control flags while folding the rest", () => {
-      const res = foldCliArgs(["--dry-run", "--json", "I", "have", "a", "question", "about", "systemd", "scopes"]);
+      const res = foldCliArgs(["--dry-run", "--debug", "--json", "I", "have", "a", "question", "about", "systemd", "scopes"]);
       assert.equal(res.dryRun, true);
+      assert.equal(res.debug, true);
       assert.equal(res.json, true);
       assert.equal(res.utterance, "I have a question about systemd scopes");
     });
@@ -89,6 +89,11 @@ describe("Quote-Free DWIM moe CLI (src/cli.ts)", () => {
       assert.equal(c.kind, "delegate");
       assert.equal(c.role, "builder");
       assert.equal(c.prompt, "check build status");
+    });
+
+    it("classifies workstation gum repo count questions as gum_query", () => {
+      const c = classifyUtterance("how many repos does gum have?");
+      assert.equal(c.kind, "gum_query");
     });
 
     it("classifies general questions or instructions as fast_question", () => {
