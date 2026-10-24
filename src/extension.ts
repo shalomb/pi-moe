@@ -9,6 +9,7 @@ import {
 import { executeDispatch, type RoleName } from "./dispatch.ts";
 import { recordSkillFriction } from "./skills-register.ts";
 import { resolveStateDir, getStatePaths } from "./xdg.ts";
+import { MOE_HIGH_AGENCY_CHARTER } from "./charter.ts";
 
 export interface ExtensionAPI {
   on(event: string, handler: (event: any, ctx?: any) => Promise<any> | any): void;
@@ -19,7 +20,7 @@ export interface ExtensionAPI {
 }
 
 export default function moeExtension(pi: ExtensionAPI) {
-  // 1. Hook before_agent_start: Inject moe_focus into systemPromptOptions.sections
+  // 1. Hook before_agent_start: Inject moe_focus and moe_charter into systemPromptOptions.sections
   pi.on("before_agent_start", async (event: any) => {
     const isMoe = process.env.PI_ROLE === "moe" || process.env.MOE_ENABLED === "1";
     if (!isMoe) return;
@@ -32,6 +33,7 @@ export default function moeExtension(pi: ExtensionAPI) {
         event.systemPromptOptions.sections = {};
       }
       event.systemPromptOptions.sections.moe_focus = focusSection;
+      event.systemPromptOptions.sections.moe_charter = MOE_HIGH_AGENCY_CHARTER;
     }
   });
 

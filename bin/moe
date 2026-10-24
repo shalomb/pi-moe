@@ -1,0 +1,18 @@
+#!/usr/bin/env -S node --import tsx
+import { executeCli } from "../src/cli.ts";
+
+async function main() {
+  const argv = process.argv.slice(2);
+  const result = await executeCli(argv);
+
+  if (argv.includes("--json")) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(result.output);
+  }
+}
+
+main().catch((err) => {
+  console.error("moe error:", err);
+  process.exit(1);
+});

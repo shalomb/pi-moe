@@ -249,6 +249,7 @@ max_tokens: 1000
 (none)
 
 ## Standing Anchors
+- High-Agency DWIM: Green/Amber actions execute immediately without permission prompts; only Red-zone irreversible/external actions require confirmation.
 - TDD & Farley index
 - ACP Conventional Commits
 - Diátaxis documentation

@@ -121,6 +121,8 @@ describe("Memory Grooming & pi-moe Extension (src/groom.ts & src/extension.ts)",
 
         assert.ok(event.systemPromptOptions.sections.moe_focus);
         assert.match(event.systemPromptOptions.sections.moe_focus, /<moe_focus>/);
+        assert.ok(event.systemPromptOptions.sections.moe_charter);
+        assert.match(event.systemPromptOptions.sections.moe_charter, /High-Agency/i);
 
         // Verify session_before_compact hook attaches grooming instructions
         assert.ok(handlers["session_before_compact"]?.length > 0);
@@ -148,8 +150,12 @@ describe("Memory Grooming & pi-moe Extension (src/groom.ts & src/extension.ts)",
       assert.ok(delegateTool);
 
       const origEnv = { ...process.env };
+      const tmpRegisterPath = path.join(tmpDir, "skill-register.json");
+      fs.copyFileSync(path.resolve("loadouts/skill-register.json"), tmpRegisterPath);
+
       try {
         process.env.MOE_STATE_DIR = tmpDir;
+        process.env.MOE_SKILLS_REGISTER = tmpRegisterPath;
 
         const res = await delegateTool.execute(
           "call-1",

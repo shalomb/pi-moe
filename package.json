@@ -14,6 +14,7 @@
     "./skills-register": "./src/skills-register.ts"
   },
   "bin": {
+    "moe": "./bin/moe",
     "moe-init": "./bin/moe-init",
     "moe-memory": "./bin/moe-memory",
     "moe-dispatch": "./bin/moe-dispatch",

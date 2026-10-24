@@ -26,6 +26,9 @@ const DEFAULT_REGISTER_PATH = path.resolve(__dirname, "../loadouts/skill-registe
 
 export function getRegisterPath(customPath?: string): string {
   if (customPath) return path.resolve(customPath);
+  if (process.env.MOE_SKILLS_REGISTER && process.env.MOE_SKILLS_REGISTER.trim() !== "") {
+    return path.resolve(process.env.MOE_SKILLS_REGISTER.trim());
+  }
   return DEFAULT_REGISTER_PATH;
 }
 
